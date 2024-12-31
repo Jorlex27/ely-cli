@@ -1,4 +1,4 @@
-import { toConstantCase, toKebabCase, toPascalCase, toSnakeCase } from '@/helpers/text.helpers'
+import { toCamelCase, toConstantCase, toKebabCase, toPascalCase, toSnakeCase } from '@/helpers/text.helpers'
 import chalk from 'chalk'
 import fs from 'fs/promises'
 import path from 'path'
@@ -22,7 +22,7 @@ export const generateModule = async (name: string) => {
         const kebabName = toKebabCase(name)
         const pascalName = toPascalCase(name)
         const upperName = toConstantCase(name)
-        const snakeName = toSnakeCase(name)
+        const camelName = toCamelCase(name)
         
         const moduleDir = path.join(process.cwd(), 'src/modules', kebabName)
 
@@ -56,7 +56,7 @@ export const generateModule = async (name: string) => {
             },
             {
                 filename: `${kebabName}.routes.ts`,
-                content: generateRouteTemplate(pascalName, kebabName)
+                content: generateRouteTemplate(pascalName, kebabName, camelName)
             },
             {
                 filename: 'index.ts',
@@ -72,7 +72,7 @@ export const generateModule = async (name: string) => {
             )
         }
 
-        await updateRouteManager(kebabName)
+        await updateRouteManager(kebabName, camelName)
 
         console.log(chalk.green(`✨ Module ${kebabName} generated successfully!`))
     } catch (error) {

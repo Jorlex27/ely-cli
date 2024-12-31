@@ -99,23 +99,23 @@ export class ${name}Service {
     }
 }`
 
-export const generateRouteTemplate = (name: string, kebabName: string): string => `
+export const generateRouteTemplate = (pascalName: string, kebabName: string, camelName: string): string => `
 import { Elysia, t } from 'elysia'
-import { ${name}Controller } from './${kebabName}.controller'
+import { ${pascalName}Controller } from './${kebabName}.controller'
 
-let controller: ${name}Controller
+let controller: ${pascalName}Controller
 
-export const ${name.toLowerCase()}Routes = new Elysia({ prefix: '/${name.toLowerCase()}' })
+export const ${camelName}Routes = new Elysia({ prefix: '/${kebabName}' })
     .onBeforeHandle(() => {
         // Lazy initialization of controller
         if (!controller) {
-            controller = new ${name}Controller()
+            controller = new ${pascalName}Controller()
         }
     })
     .get('/', () => controller.getAll(), {
         detail: {
-            tags: ['${name}'],
-            summary: 'Get all ${name.toLowerCase()} items'
+            tags: ['${pascalName}'],
+            summary: 'Get all ${pascalName.toLowerCase()} items'
         }
     })
     .get('/:id', ({ params: { id } }) => controller.getById(id), {
@@ -123,8 +123,8 @@ export const ${name.toLowerCase()}Routes = new Elysia({ prefix: '/${name.toLower
             id: t.String()
         }),
         detail: {
-            tags: ['${name}'],
-            summary: 'Get ${name.toLowerCase()} by ID'
+            tags: ['${pascalName}'],
+            summary: 'Get ${pascalName.toLowerCase()} by ID'
         }
     })
     .post('/', ({ body }) => controller.create(body), {
@@ -132,8 +132,8 @@ export const ${name.toLowerCase()}Routes = new Elysia({ prefix: '/${name.toLower
             // Add your validation schema here
         }),
         detail: {
-            tags: ['${name}'],
-            summary: 'Create new ${name.toLowerCase()}'
+            tags: ['${pascalName}'],
+            summary: 'Create new ${pascalName.toLowerCase()}'
         }
     })
     .put('/:id', ({ params: { id }, body }) => controller.update(id, body), {
@@ -144,8 +144,8 @@ export const ${name.toLowerCase()}Routes = new Elysia({ prefix: '/${name.toLower
             // Add your validation schema here
         }),
         detail: {
-            tags: ['${name}'],
-            summary: 'Update ${name.toLowerCase()} by ID'
+            tags: ['${pascalName}'],
+            summary: 'Update ${pascalName.toLowerCase()} by ID'
         }
     })
     .delete('/:id', ({ params: { id } }) => controller.delete(id), {
@@ -153,7 +153,7 @@ export const ${name.toLowerCase()}Routes = new Elysia({ prefix: '/${name.toLower
             id: t.String()
         }),
         detail: {
-            tags: ['${name}'],
-            summary: 'Delete ${name.toLowerCase()} by ID'
+            tags: ['${pascalName}'],
+            summary: 'Delete ${pascalName.toLowerCase()} by ID'
         }
     })`
