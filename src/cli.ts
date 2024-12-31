@@ -26,7 +26,7 @@ program
     .description('Generate a new module')
     .action(async (name: string) => {
         try {
-            await generateModule(name)
+            await generateModule(name.toLowerCase())
         } catch (error) {
             console.error(chalk.red('Error:', error))
         }
