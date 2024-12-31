@@ -1,6 +1,6 @@
 {
   "name": "ely-cli",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "CLI tool for Elysia.js projects",
   "type": "module",
   "bin": {
