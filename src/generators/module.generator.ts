@@ -1,14 +1,15 @@
+import { toConstantCase, toKebabCase, toPascalCase, toSnakeCase } from '@/helpers/text.helpers'
 import chalk from 'chalk'
 import fs from 'fs/promises'
 import path from 'path'
+import { updateCollectionsConfig } from '../templates/collection.template'
 import {
     generateControllerTemplate,
     generateRouteTemplate,
-    generateServiceTemplate
+    generateServiceTemplate,
+    generateTypesTemplate
 } from '../templates/module.template'
 import { updateRouteManager } from '../utils/route.util'
-import { generateTypesTemplate } from '@/templates/types.template'
-import { updateCollectionsConfig } from '../templates/collection.template'
 
 interface ModuleFile {
     filename: string;
@@ -17,18 +18,24 @@ interface ModuleFile {
 
 export const generateModule = async (name: string) => {
     try {
-        const moduleDir = path.join(process.cwd(), 'src/modules', name.toLowerCase())
+        // Generate different case variations
+        const kebabName = toKebabCase(name)
+        const pascalName = toPascalCase(name)
+        const upperName = toConstantCase(name)
+        const snakeName = toSnakeCase(name)
+        
+        const moduleDir = path.join(process.cwd(), 'src/modules', kebabName)
 
         // Check if module already exists
         const exists = await fs.access(moduleDir).then(() => true).catch(() => false)
         if (exists) {
-            console.log(chalk.yellow(`Module ${name} already exists!`))
+            console.log(chalk.yellow(`Module ${kebabName} already exists!`))
             return
         }
 
         // Update collections first
         console.log(chalk.blue('Updating collections configuration...'))
-        await updateCollectionsConfig(name)
+        await updateCollectionsConfig(kebabName)
 
         // Create module directory
         await fs.mkdir(moduleDir, { recursive: true })
@@ -36,24 +43,24 @@ export const generateModule = async (name: string) => {
         // Generate files with explicit typing
         const files: ModuleFile[] = [
             {
-                filename: `${name}.types.ts`,
-                content: generateTypesTemplate(name)
+                filename: `${kebabName}.types.ts`,
+                content: generateTypesTemplate(pascalName)
             },
             {
-                filename: `${name}.controller.ts`,
-                content: generateControllerTemplate(name)
+                filename: `${kebabName}.controller.ts`,
+                content: generateControllerTemplate(pascalName, kebabName)
             },
             {
-                filename: `${name}.service.ts`,
-                content: generateServiceTemplate(name)
+                filename: `${kebabName}.service.ts`,
+                content: generateServiceTemplate(pascalName, kebabName, upperName)
             },
             {
-                filename: `${name}.routes.ts`,
-                content: generateRouteTemplate(name)
+                filename: `${kebabName}.routes.ts`,
+                content: generateRouteTemplate(pascalName, kebabName)
             },
             {
                 filename: 'index.ts',
-                content: `export * from './${name}.routes'`
+                content: `export * from './${kebabName}.routes'`
             }
         ]
 
@@ -65,9 +72,9 @@ export const generateModule = async (name: string) => {
             )
         }
 
-        await updateRouteManager(name)
+        await updateRouteManager(kebabName)
 
-        console.log(chalk.green(`✨ Module ${name} generated successfully!`))
+        console.log(chalk.green(`✨ Module ${kebabName} generated successfully!`))
     } catch (error) {
         console.error(chalk.red('Error generating module:'), error)
         throw error

@@ -1,11 +1,22 @@
-import { toProperCase } from "@/helpers/text.helpers"
+export const generateTypesTemplate = (name: string): string => `
+import { ObjectId } from 'mongodb'
 
-export const generateControllerTemplate = (name: string): string => `
-import { ${toProperCase(name)}Service } from './${name}.service'
-import type { ${toProperCase(name)}Data, ${toProperCase(name)}Input } from './${name}.types'
+export interface ${name}Data {
+    _id: ObjectId
+    // Add your data properties here
+    createdAt: Date
+    updatedAt: Date
+}
+    
+export type ${name}Input = Omit<${name}Data, '_id' | 'createdAt' | 'updatedAt'>
+`
 
-export class ${toProperCase(name)}Controller {
-    constructor(private service: ${toProperCase(name)}Service = new ${toProperCase(name)}Service()) {}
+export const generateControllerTemplate = (name: string, kebabName: string): string => `
+import { ${name}Service } from './${kebabName}.service'
+import type { ${name}Data, ${name}Input } from './${kebabName}.types'
+
+export class ${name}Controller {
+    constructor(private service: ${name}Service = new ${name}Service()) {}
 
     async getAll() {
         return await this.service.findAll()
@@ -15,11 +26,11 @@ export class ${toProperCase(name)}Controller {
         return await this.service.findById(id)
     }
 
-    async create(data: ${toProperCase(name)}Input) {
+    async create(data: ${name}Input) {
         return await this.service.create(data)
     }
 
-    async update(id: string, data: Partial<${toProperCase(name)}Data>) {
+    async update(id: string, data: Partial<${name}Data>) {
         return await this.service.update(id, data)
     }
 
@@ -28,15 +39,15 @@ export class ${toProperCase(name)}Controller {
     }
 }`
 
-export const generateServiceTemplate = (name: string): string => `
+export const generateServiceTemplate = (name: string, kebabName: string, upperName: string): string => `
 import { COLLECTIONS } from '@/config/collections.config'
 import { db } from '@/shared/utils/db.util'
 import { ObjectId } from 'mongodb'
-import type { ${toProperCase(name)}Data, ${toProperCase(name)}Input } from './${name}.types'
+import type { ${name}Data, ${name}Input } from './${kebabName}.types'
 
-export class ${toProperCase(name)}Service {
+export class ${name}Service {
     private get collection() {
-        return db.getDb().collection(COLLECTIONS.${name.toUpperCase()})
+        return db.getDb().collection(COLLECTIONS.${upperName})
     }
 
     async findAll() {
@@ -46,12 +57,12 @@ export class ${toProperCase(name)}Service {
 
     async findById(id: string) {
         const item = await this.collection.findOne({ _id: new ObjectId(id) })
-        if (!item) throw new Error('${toProperCase(name)} not found')
+        if (!item) throw new Error('${name} not found')
         return item
     }
 
-    async create(data: ${toProperCase(name)}Input) {
-        const newItem: ${toProperCase(name)}Data = {
+    async create(data: ${name}Input) {
+        const newItem: ${name}Data = {
             ...data,
             _id: new ObjectId(),
             createdAt: new Date(),
@@ -61,7 +72,7 @@ export class ${toProperCase(name)}Service {
         return newItem
     }
 
-    async update(id: string, data: Partial<${toProperCase(name)}Data>) {
+    async update(id: string, data: Partial<${name}Data>) {
         const updatedItem = {
             ...data,
             updatedAt: new Date()
@@ -73,7 +84,7 @@ export class ${toProperCase(name)}Service {
         )
 
         if (!result.matchedCount) {
-            throw new Error('${toProperCase(name)} not found')
+            throw new Error('${name} not found')
         }
 
         return this.findById(id)
@@ -82,28 +93,28 @@ export class ${toProperCase(name)}Service {
     async delete(id: string) {
         const result = await this.collection.deleteOne({ _id: new ObjectId(id) })
         if (!result.deletedCount) {
-            throw new Error('${toProperCase(name)} not found')
+            throw new Error('${name} not found')
         }
         return { id }
     }
 }`
 
-export const generateRouteTemplate = (name: string): string => `
+export const generateRouteTemplate = (name: string, kebabName: string): string => `
 import { Elysia, t } from 'elysia'
-import { ${toProperCase(name)}Controller } from './${name}.controller'
+import { ${name}Controller } from './${kebabName}.controller'
 
-let controller: ${toProperCase(name)}Controller
+let controller: ${name}Controller
 
 export const ${name.toLowerCase()}Routes = new Elysia({ prefix: '/${name.toLowerCase()}' })
     .onBeforeHandle(() => {
         // Lazy initialization of controller
         if (!controller) {
-            controller = new ${toProperCase(name)}Controller()
+            controller = new ${name}Controller()
         }
     })
     .get('/', () => controller.getAll(), {
         detail: {
-            tags: ['${toProperCase(name)}'],
+            tags: ['${name}'],
             summary: 'Get all ${name.toLowerCase()} items'
         }
     })
@@ -112,7 +123,7 @@ export const ${name.toLowerCase()}Routes = new Elysia({ prefix: '/${name.toLower
             id: t.String()
         }),
         detail: {
-            tags: ['${toProperCase(name)}'],
+            tags: ['${name}'],
             summary: 'Get ${name.toLowerCase()} by ID'
         }
     })
@@ -121,7 +132,7 @@ export const ${name.toLowerCase()}Routes = new Elysia({ prefix: '/${name.toLower
             // Add your validation schema here
         }),
         detail: {
-            tags: ['${toProperCase(name)}'],
+            tags: ['${name}'],
             summary: 'Create new ${name.toLowerCase()}'
         }
     })
@@ -133,7 +144,7 @@ export const ${name.toLowerCase()}Routes = new Elysia({ prefix: '/${name.toLower
             // Add your validation schema here
         }),
         detail: {
-            tags: ['${toProperCase(name)}'],
+            tags: ['${name}'],
             summary: 'Update ${name.toLowerCase()} by ID'
         }
     })
@@ -142,7 +153,7 @@ export const ${name.toLowerCase()}Routes = new Elysia({ prefix: '/${name.toLower
             id: t.String()
         }),
         detail: {
-            tags: ['${toProperCase(name)}'],
+            tags: ['${name}'],
             summary: 'Delete ${name.toLowerCase()} by ID'
         }
     })`

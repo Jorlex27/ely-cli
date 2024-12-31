@@ -1,78 +1,18 @@
-import path from "path"
-import fs from "fs/promises"
+import { pluralize, toConstantCase, toSnakeCase } from "@/helpers/text.helpers"
 import chalk from "chalk"
-
-const pluralize = (name: string): string => {
-    // Handle common irregular plurals
-    const irregulars: Record<string, string> = {
-        person: 'people',
-        child: 'children',
-        foot: 'feet',
-        tooth: 'teeth',
-        mouse: 'mice',
-        criterion: 'criteria',
-        analysis: 'analyses',
-        datum: 'data',
-        index: 'indices',
-        matrix: 'matrices',
-        vertex: 'vertices',
-        status: 'statuses'  // Exception to es rule
-    }
-
-    const name_lower = name.toLowerCase()
-    
-    // Check for irregular plurals first
-    if (irregulars[name_lower]) {
-        return irregulars[name_lower]
-    }
-
-    // Handle words that are already plural
-    if (name_lower.endsWith('s') && 
-        (name_lower.endsWith('ss') || 
-         name_lower.endsWith('us') || 
-         name_lower.endsWith('is'))) {
-        return name
-    }
-
-    // Handle regular plural rules
-    if (name_lower.endsWith('y')) {
-        const vowels = new Set(['a', 'e', 'i', 'o', 'u'])
-        const beforeY = name_lower[name_lower.length - 2]
-        return vowels.has(beforeY as string) ? `${name}s` : `${name.slice(0, -1)}ies`
-    }
-    
-    if (name_lower.endsWith('s') || 
-        name_lower.endsWith('sh') || 
-        name_lower.endsWith('ch') || 
-        name_lower.endsWith('x') || 
-        name_lower.endsWith('z')) {
-        return `${name}es`
-    }
-    
-    if (name_lower.endsWith('fe')) {
-        return `${name.slice(0, -2)}ves`
-    }
-    
-    if (name_lower.endsWith('f')) {
-        return `${name.slice(0, -1)}ves`
-    }
-
-    // Special cases for 'o' endings
-    const oExceptions = new Set(['photo', 'piano', 'memo'])
-    if (name_lower.endsWith('o') && !oExceptions.has(name_lower)) {
-        return `${name}es`
-    }
-
-    // Default case: just add 's'
-    return `${name}s`
-}
+import fs from "fs/promises"
+import path from "path"
 
 export const generateCollectionTemplate = (collections: string[]): string => {
     // Sort collections alphabetically
     const sortedCollections = [...new Set(collections)].sort()
     
     const collectionsObject = sortedCollections
-        .map(name => `    ${name.toUpperCase()}: '${pluralize(name.toLowerCase())}'`)
+        .map(name => {
+            const constName = toConstantCase(name)
+            const snakelName = toSnakeCase(name)
+            return `    ${constName}: '${snakelName}'`
+        })
         .join(',\n')
 
     return `// This file is auto-generated. Do not edit manually
