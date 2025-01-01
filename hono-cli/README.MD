@@ -1,6 +1,6 @@
-# Ely-CLI 🦊
+# Hono-CLI 🦊
 
-A powerful CLI tool for scaffolding and managing Elysia.js projects. Create new projects, generate modules, and streamline your development workflow with MongoDB integration.
+A powerful CLI tool for scaffolding and managing Hono.js projects. Create new projects, generate modules, and streamline your development workflow with MongoDB integration.
 
 ## Features ✨
 
@@ -8,7 +8,7 @@ A powerful CLI tool for scaffolding and managing Elysia.js projects. Create new 
 - Module generation with CRUD operations
 - MongoDB integration out of the box
 - Swagger documentation
-- Type-safe routes with Elysia
+- Type-safe routes with Hono
 - Path aliases for better imports
 - Environment configuration
 - Developer-friendly CLI interface
@@ -16,9 +16,9 @@ A powerful CLI tool for scaffolding and managing Elysia.js projects. Create new 
 ## Installation 🚀
 
 ```bash
-npm install -g ely-cli
+npm install -g hono-cli
 # or
-bun install -g ely-cli
+bun install -g hono-cli
 ```
 
 ## Usage 📚
@@ -26,10 +26,10 @@ bun install -g ely-cli
 ### Create New Project
 
 ```bash
-ely-cli init my-project
+hono-cli init my-project
 ```
 
-This will create a new Elysia.js project with the following structure:
+This will create a new Hono.js project with the following structure:
 ```
 my-project/
 ├── src/
@@ -50,7 +50,7 @@ my-project/
 ### Generate Module
 
 ```bash
-ely-cli generate:module user
+hono-cli g:m user
 ```
 
 This generates a new module with:
@@ -67,6 +67,7 @@ src/modules/user/
 ├── user.service.ts
 ├── user.routes.ts
 ├── user.types.ts
+├── user.validation.ts
 └── index.ts
 ```
 
@@ -79,11 +80,11 @@ Database configuration is located in `src/config/db.config.ts`:
 export const dbConfig = {
   development: {
         url: process.env.DB_URL || 'mongodb://localhost:27017',
-        name: process.env.DB_NAME || 'elysia_dev'
+        name: process.env.DB_NAME || 'hono_dev'
     },
   test: {
         url: process.env.TEST_DB_URL || 'mongodb://localhost:27017',
-        name: process.env.TEST_DB_NAME || 'elysia_test',
+        name: process.env.TEST_DB_NAME || 'hono_test',
         options: {
             maxPoolSize: 5,
             minPoolSize: 1
@@ -91,7 +92,7 @@ export const dbConfig = {
     },
     production: {
         url: process.env.PROD_DB_URL || 'mongodb://localhost:27017',
-        name: process.env.PROD_DB_NAME || 'elysia_prod',
+        name: process.env.PROD_DB_NAME || 'hono_prod',
         options: {
             maxPoolSize: 20,
             minPoolSize: 10,
@@ -111,19 +112,19 @@ PORT=3000
 
 # Database Configuration
 DB_URL=mongodb://localhost:27017
-DB_NAME=elysia_dev
+DB_NAME=hono_dev
 
 # Production Database
 PROD_DB_URL=mongodb://your-production-url:27017
-PROD_DB_NAME=elysia_prod
+PROD_DB_NAME=hono_prod
 ```
 
 ## Commands Reference 📖
 
 | Command | Description |
 |---------|-------------|
-| `ely-cli init <name>` | Create new Elysia.js project |
-| `ely-cli generate:module <name>` | Generate new module with CRUD |
+| `hono-cli init <name>` | Create new Hono.js project |
+| `hono-cli g:m <name>` | Generate new module with CRUD |
 
 ## Project Structure 🏗
 
