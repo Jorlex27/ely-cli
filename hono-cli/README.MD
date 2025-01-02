@@ -71,6 +71,37 @@ src/modules/user/
 └── index.ts
 ```
 
+### Generate Router Only
+
+```bash
+hono-cli g:r user
+```
+
+This generates a minimal module with just routing functionality:
+```
+src/modules/user/
+├── user.routes.ts
+└── index.ts
+```
+
+The router generator:
+- Creates only routing-related files
+- Automatically registers routes in the route manager
+- Perfect for simple API endpoints without complex business logic
+
+### Version Check
+
+```bash
+hono-cli version
+# or
+hono-cli v
+```
+
+Shows detailed package information:
+- Current package version
+- List of installed dependencies and their versions
+- List of development dependencies and their versions
+
 ## Configuration 🛠
 
 ### Database
