@@ -3,6 +3,7 @@ import { Command } from 'commander'
 import chalk from 'chalk'
 import { initializeProject } from './generators/init.generator'
 import { generateModule } from './generators/module.generator'
+import { generateRouter } from './generators/router.generator'
 
 const program = new Command()
 
@@ -19,7 +20,7 @@ program
         } catch (error) {
             console.error(chalk.red('Error:', error))
         }
-    })
+    });
 
 program
     .command('g:m <name>')
@@ -27,6 +28,17 @@ program
     .action(async (name: string) => {
         try {
             await generateModule(name.toLowerCase())
+        } catch (error) {
+            console.error(chalk.red('Error:', error))
+        }
+    });
+
+program
+    .command('g:r <name>')
+    .description('Generate a new router')
+    .action(async (name: string) => {
+        try {
+            await generateRouter(name.toLowerCase())
         } catch (error) {
             console.error(chalk.red('Error:', error))
         }
