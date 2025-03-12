@@ -21,169 +21,53 @@ export const ${name}Schema = z.object({
 
 export const generateControllerTemplate = (name: string, kebabName: string, camelName: string): string => `
 import type { Context } from "hono"
+import { createController } from '@/shared/controller'
 import { ${name}Service } from './${kebabName}.service'
 import { ${camelName}Schema } from './${kebabName}.validation'
 
-export class ${name}Controller {
-    static async getAll(c: Context) {
-        try {
-            const items = await ${name}Service.findAll()
-            return c.json({
-                success: true,
-                message: "Success",
-                data: items
-            })
-        } catch (error) {
-            throw error
-        }
-    }
+const baseSantriController = createController({
+    service: ${name}Service,
+    validationSchema: ${camelName}Schema,
+    // formatData: (data) => data,
+    entityName: '${name}'
+})
 
-    static async getById(c: Context) {
-        try {
-            const id = c.req.param("id")
-            const item = await ${name}Service.findById(id)
-            return c.json({
-                success: true,
-                message: "Success",
-                data: item
-            })
-        } catch (error) {
-            throw error
-        }
-    }
+export const ${camelName}Controller = {
+    ...baseSantriController,
 
-    static async create(c: Context) {
-        try {
-            const data = await c.req.json()
-            const validation = ${camelName}Schema.safeParse(data)
-
-            if (!validation.success) {
-                return c.json({
-                    success: false,
-                    message: "Validation Error",
-                    data: validation.error
-                }, 400)
-            }
-
-            const newItem = await ${name}Service.create(validation.data)
-            return c.json({
-                success: true,
-                message: "Success",
-                data: newItem
-            })
-        } catch (error) {
-            throw error
-        }
-    }
-
-    static async update(c: Context) {
-        try {
-            const id = c.req.param("id")
-            const data = await c.req.json()
-            const validation = ${camelName}Schema.safeParse(data)
-
-            if (!validation.success) {
-                return c.json({
-                    success: false,
-                    message: "Validation Error",
-                    data: validation.error
-                }, 400)
-            }
-
-            const item = await ${name}Service.findById(id)
-            if (!item) {
-                return c.json({
-                    success: false,
-                    message: "${name} not found",
-                    data: null
-                }, 404)
-            }
-
-            const updatedItem = await ${name}Service.update(id, validation.data)
-            return c.json({
-                success: true,
-                message: "Success",
-                data: updatedItem
-            })
-        } catch (error) {
-            throw error
-        }
-    }
-
-    static async delete(c: Context) {
-        try {
-            const id = c.req.param("id")
-            const result = await ${name}Service.delete(id)
-            return c.json({
-                success: true,
-                message: "Success",
-                data: result
-            })
-        } catch (error) {
-            throw error
-        }
-    }
+    // Add your custom methods here
 }`
 
 export const generateServiceTemplate = (name: string, kebabName: string, upperName: string): string => `
 import { COLLECTIONS } from '@/config/collections.config'
 import { db } from '@/shared/utils/db.util'
+import { BaseService, createService } from '@/shared/service'
 import { ObjectId } from 'mongodb'
 import type { ${name}Data, ${name}Input } from './${kebabName}.types'
 
-export class ${name}Service {
-    static async collection() {
-        return db.getDb().collection(COLLECTIONS.${upperName})
+export class Custom${name}Service extends BaseService<${name}Data, ${name}Input> {
+    static getAggregatePipeline() {
+        return []
     }
+    
+    // Add your custom methods here
+}
 
-    static async findAll() {
-        const collection = await this.collection()
-        return await collection.find().toArray()
-    }
 
-    static async findById(id: string) {
-        const collection = await this.collection()
-        const item = await collection.findOne({ _id: new ObjectId(id) })
-        if (!item) throw new Error('${name} not found')
-        return item
-    }
+const custom${name}Service = new Custom${name}Service({
+    collectionName: COLLECTIONS.${upperName},
+    getAggregatePipeline: Custom${name}Service.getAggregatePipeline
+})
 
-    static async create(data: ${name}Input) {
-        const collection = await this.collection()
-        const newItem: ${name}Data = {
-            ...data,
-            _id: new ObjectId(),
-            createdAt: new Date(),
-            updatedAt: new Date()
-        }
-        await collection.insertOne(newItem)
-        return newItem
-    }
+export const ${upperName}Service = createService<${name}Data, ${name}Input>({
+    collectionName: COLLECTIONS.${upperName},
+    getAggregatePipeline: Custom${name}Service.getAggregatePipeline
 
-    static async update(id: string, data: Partial<${name}Data>) {
-        const collection = await this.collection()
-        const updateData = {
-            ...data,
-            updatedAt: new Date()
-        }
-        
-        const result = await collection.findOneAndUpdate(
-            { _id: new ObjectId(id) },
-            { $set: updateData },
-            { returnDocument: 'after' }
-        )
+    // Add your custom methods here
+})
 
-        if (!result) throw new Error('${name} not found')
-        return result
-    }
-
-    static async delete(id: string) {
-        const collection = await this.collection()
-        const result = await collection.deleteOne({ _id: new ObjectId(id) })
-        if (!result.deletedCount) throw new Error('${name} not found')
-        return { id }
-    }
-}`
+export { Custom${name}Service }
+`
 
 export const generateRouteTemplate = (pascalName: string, kebabName: string, camelName: string): string => `
 import { Hono } from 'hono'
