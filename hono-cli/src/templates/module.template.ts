@@ -1,11 +1,8 @@
 export const generateTypesTemplate = (name: string): string => `
-import { ObjectId } from 'mongodb'
+import { BaseModel } from '@/shared/service/types'
 
-export interface ${name}Data {
-    _id: ObjectId
-    // Add your data properties here
-    createdAt: Date
-    updatedAt: Date
+export interface ${name}Data extends BaseModel {
+    // Add your schema here
 }
     
 export type ${name}Input = Omit<${name}Data, '_id' | 'createdAt' | 'updatedAt'>
@@ -22,11 +19,11 @@ export const ${name}Schema = z.object({
 export const generateControllerTemplate = (name: string, kebabName: string, camelName: string): string => `
 import type { Context } from "hono"
 import { createController } from '@/shared/controller'
-import { ${name}Service } from './${kebabName}.service'
+import { ${name.toLowerCase()}Service } from './${kebabName}.service'
 import { ${camelName}Schema } from './${kebabName}.validation'
 
 const baseSantriController = createController({
-    service: ${name}Service,
+    service: ${name.toLowerCase()}Service,
     validationSchema: ${camelName}Schema,
     // formatData: (data) => data,
     entityName: '${name}'
@@ -40,9 +37,7 @@ export const ${camelName}Controller = {
 
 export const generateServiceTemplate = (name: string, kebabName: string, upperName: string): string => `
 import { COLLECTIONS } from '@/config/collections.config'
-import { db } from '@/shared/utils/db.util'
 import { BaseService, createService } from '@/shared/service'
-import { ObjectId } from 'mongodb'
 import type { ${name}Data, ${name}Input } from './${kebabName}.types'
 
 export class Custom${name}Service extends BaseService<${name}Data, ${name}Input> {
@@ -54,30 +49,28 @@ export class Custom${name}Service extends BaseService<${name}Data, ${name}Input>
 }
 
 
-const custom${name}Service = new Custom${name}Service({
+export const custom${name}Service = new Custom${name}Service({
     collectionName: COLLECTIONS.${upperName},
     getAggregatePipeline: Custom${name}Service.getAggregatePipeline
 })
 
-export const ${upperName}Service = createService<${name}Data, ${name}Input>({
+export const ${name.toLowerCase()}Service = createService<${name}Data, ${name}Input>({
     collectionName: COLLECTIONS.${upperName},
     getAggregatePipeline: Custom${name}Service.getAggregatePipeline
 
     // Add your custom methods here
 })
-
-export { Custom${name}Service }
 `
 
 export const generateRouteTemplate = (pascalName: string, kebabName: string, camelName: string): string => `
 import { Hono } from 'hono'
-import { ${pascalName}Controller } from './${kebabName}.controller'
+import { ${camelName}Controller } from './${kebabName}.controller'
 
 export const ${camelName}Router =
     new Hono()
-        .get('/', ${pascalName}Controller.getAll)
-        .get('/:id', ${pascalName}Controller.getById)
-        .post('/', ${pascalName}Controller.create)
-        .put('/:id', ${pascalName}Controller.update)
-        .delete('/:id', ${pascalName}Controller.delete)
+        .get('/', ${camelName}Controller.getAll)
+        .get('/:id', ${camelName}Controller.getById)
+        .post('/', ${camelName}Controller.create)
+        .put('/:id', ${camelName}Controller.update)
+        .delete('/:id', ${camelName}Controller.delete)
     `

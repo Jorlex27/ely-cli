@@ -41,7 +41,6 @@ export const updateCollectionsConfig = async (newModule: string) => {
                 existingCollections = matches
                     .map(m => m.replace(/['"]/g, ''))
                     .filter(m => m !== 'collections.config.ts')
-                    // .map(m => m.replace(/s$/, ''))
                     .map(m => m.toLowerCase()) // Normalize to lowercase
             }
         } catch (error) {
