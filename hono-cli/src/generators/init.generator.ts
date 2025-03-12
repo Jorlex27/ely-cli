@@ -4,6 +4,15 @@ import { exists, createDirectory, writeFile } from '@utils/file.util'
 import { generateIndexTs, generateRouteManagerTemplate } from '@templates/project.template'
 import { execSync } from 'child_process'
 import fs from 'fs/promises'
+import { dbConfig } from './config/db.config'
+import { dbUtil } from './config/db.utils'
+import { tsConfig } from './config/ts.config'
+import { serviceIndexTemplate } from './config/service'
+import { serviceTypesTemplate } from './config/service/types'
+import { envTemplate } from './env'
+import { paginationTemplate } from './config/pagination/pagination'
+import { controllerTypesTemplate } from './config/controller/types'
+import { controllerIndexTemplate } from './config/controller'
 
 export const initializeProject = async (projectName: string) => {
     const projectPath = path.join(process.cwd(), projectName)
@@ -41,150 +50,14 @@ export const initializeProject = async (projectName: string) => {
             'src/modules',
             'src/shared/middleware',
             'src/shared/utils',
-            'src/config',
+            'src/shared/service',
+            'src/shared/controller',
+            'src/shared/pagination',
+            'src/config'
         ]
 
         for (const dir of dirs) {
             await createDirectory(dir)
-        }
-
-        // Create database config
-        const dbConfig = `interface DatabaseConfig {
-    url: string;
-    name: string;
-    options?: {
-        maxPoolSize?: number;
-        minPoolSize?: number;
-        retryWrites?: boolean;
-        retryReads?: boolean;
-    };
-}
-
-interface Config {
-    development: DatabaseConfig;
-    test: DatabaseConfig;
-    production: DatabaseConfig;
-}
-
-export const dbConfig: Config = {
-    development: {
-        url: process.env.DB_URL || 'mongodb://localhost:27017',
-        name: process.env.DB_NAME || 'elysia_dev',
-        options: {
-            maxPoolSize: 10,
-            minPoolSize: 5,
-            retryWrites: true,
-            retryReads: true
-        }
-    },
-    test: {
-        url: process.env.TEST_DB_URL || 'mongodb://localhost:27017',
-        name: process.env.TEST_DB_NAME || 'elysia_test',
-        options: {
-            maxPoolSize: 5,
-            minPoolSize: 1
-        }
-    },
-    production: {
-        url: process.env.PROD_DB_URL || 'mongodb://localhost:27017',
-        name: process.env.PROD_DB_NAME || 'elysia_prod',
-        options: {
-            maxPoolSize: 20,
-            minPoolSize: 10,
-            retryWrites: true,
-            retryReads: true
-        }
-    }
-}`
-
-        // Create database utility
-        const dbUtil = `import { MongoClient, Db } from 'mongodb'
-import { dbConfig } from '@config/db.config'
-
-class Database {
-    private static instance: Database
-    private client: MongoClient | null = null
-    private db: Db | null = null
-
-    private constructor() {}
-
-    static getInstance(): Database {
-        if (!Database.instance) {
-            Database.instance = new Database()
-        }
-        return Database.instance
-    }
-
-    async connect(): Promise<void> {
-        try {
-            const env = process.env.NODE_ENV || 'development'
-            const config = dbConfig[env as keyof typeof dbConfig]
-
-            if (!this.client) {
-                this.client = new MongoClient(config.url, config.options)
-                await this.client.connect()
-                this.db = this.client.db(config.name)
-                console.log(\`Connected to database: \${config.name}\`)
-            }
-        } catch (error) {
-            console.error('Database connection error:', error)
-            throw error
-        }
-    }
-
-    getDb(): Db {
-        if (!this.db) {
-            throw new Error('Database not initialized. Call connect() first.')
-        }
-        return this.db
-    }
-
-    async disconnect(): Promise<void> {
-        try {
-            if (this.client) {
-                await this.client.close()
-                this.client = null
-                this.db = null
-                console.log('Database connection closed')
-            }
-        } catch (error) {
-            console.error('Error closing database connection:', error)
-            throw error
-        }
-    }
-}
-
-export const db = Database.getInstance()`
-
-        const tsConfig = {
-            compilerOptions: {
-                target: "ESNext",
-                module: "ESNext",
-                moduleResolution: "bundler",
-                types: ["bun-types"],
-                allowImportingTsExtensions: true,
-                moduleDetection: "force",
-                allowJs: true,
-                strict: true,
-                noUncheckedIndexedAccess: true,
-                noEmit: true,
-                composite: true,
-                skipLibCheck: true,
-                allowSyntheticDefaultImports: true,
-                forceConsistentCasingInFileNames: true,
-                rootDir: ".",
-                baseUrl: "src",
-                paths: {
-                    "@/*": ["*"],
-                    "@modules/*": ["modules/*"],
-                    "@shared/*": ["shared/*"],
-                    "@config/*": ["config/*"],
-                    "@templates/*": ["templates/*"],
-                    "@utils/*": ["utils/*"]
-                }
-            },
-            include: ["src/**/*"],
-            exclude: ["node_modules", "dist"]
         }
 
         // Write all config files
@@ -192,10 +65,36 @@ export const db = Database.getInstance()`
             path.join(projectPath, 'src/config/db.config.ts'),
             dbConfig
         )
-
+        
         await writeFile(
             path.join(projectPath, 'src/shared/utils/db.util.ts'),
             dbUtil
+        )
+        
+        // Write all shared files
+        await writeFile(
+            path.join(projectPath, 'src/shared/pagination/index.ts'),
+            paginationTemplate
+        )
+        
+        await writeFile(
+            path.join(projectPath, 'src/shared/service/types.ts'),
+            serviceTypesTemplate
+        )
+
+        await writeFile(
+            path.join(projectPath, 'src/shared/service/index.ts'),
+            serviceIndexTemplate
+        )
+        
+        await writeFile(
+            path.join(projectPath, 'src/shared/controller/types.ts'),
+            controllerTypesTemplate
+        )
+
+        await writeFile(
+            path.join(projectPath, 'src/shared/controller/index.ts'),
+            controllerIndexTemplate
         )
 
         await writeFile(
@@ -203,30 +102,14 @@ export const db = Database.getInstance()`
             JSON.stringify(tsConfig, null, 2)
         )
 
-        // Create .env and .env.example
-        const envTemplate = `# Database Configuration
-NODE_ENV=development
-
-# Development Database
-DB_URL=mongodb://localhost:27017
-DB_NAME=${projectName}_dev
-
-# Test Database
-TEST_DB_URL=mongodb://localhost:27017
-TEST_DB_NAME=${projectName}_test
-
-# Production Database
-PROD_DB_URL=mongodb://your-production-url:27017
-PROD_DB_NAME=${projectName}_prod`
-
         await writeFile(
             path.join(projectPath, '.env.example'),
-            envTemplate
+            envTemplate(projectName)
         )
 
         await writeFile(
             path.join(projectPath, '.env'),
-            envTemplate
+            envTemplate(projectName)
         )
 
         await writeFile(
@@ -241,7 +124,7 @@ PROD_DB_NAME=${projectName}_prod`
 
         await writeFile(
             path.join(projectPath, 'README.md'),
-            `# ${projectName}\n\nElysia.js project generated with ely-cli\n`
+            `# ${projectName}\n\Hono.js project generated with hono-cli\n`
         )
 
         await writeFile(
