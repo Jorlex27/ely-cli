@@ -40,23 +40,9 @@ import { COLLECTIONS } from '@/config/collections.config'
 import { BaseService, createService } from '@/shared/service'
 import type { ${name}Data, ${name}Input } from './${kebabName}.types'
 
-export class Custom${name}Service extends BaseService<${name}Data, ${name}Input> {
-    static getAggregatePipeline() {
-        return []
-    }
-    
-    // Add your custom methods here
-}
-
-
-export const custom${name}Service = new Custom${name}Service({
-    collectionName: COLLECTIONS.${upperName},
-    getAggregatePipeline: Custom${name}Service.getAggregatePipeline
-})
-
 export const ${name.toLowerCase()}Service = createService<${name}Data, ${name}Input>({
     collectionName: COLLECTIONS.${upperName},
-    getAggregatePipeline: Custom${name}Service.getAggregatePipeline
+    aggregatePipeline: async () => [], // Add your aggregation pipeline here
 
     // Add your custom methods here
 })

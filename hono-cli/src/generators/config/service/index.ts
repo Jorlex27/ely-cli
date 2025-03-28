@@ -2,42 +2,58 @@ export const serviceIndexTemplate = `
 import { buildMongoQuery, QueryParams } from '@/shared/pagination'
 import { db } from '@/shared/utils/db.util'
 import { ObjectId } from 'mongodb'
-import { BaseInput, BaseModel, CustomFinder, ServiceOptions } from './types'
+import { BaseInput, BaseModel, ServiceOptions } from './types'
 
 export class BaseService<T extends BaseModel, U extends BaseInput> {
     protected collectionName: string
     protected options: ServiceOptions<T, U>
-    public customFinders: CustomFinder<T> = {}
 
     constructor(options: ServiceOptions<T, U>) {
         this.collectionName = options.collectionName
         this.options = options
-
-        if (options.customFinders) {
-            this.customFinders = options.customFinders
-        }
     }
 
     protected async collection() {
         return db.getDb().collection(this.collectionName)
     }
 
-    protected getAggregatePipeline(): any[] {
-        return this.options.getAggregatePipeline ? this.options.getAggregatePipeline() : []
+    protected async aggregatePipeline(options?: Record<string, any>): Promise<any[]> {
+        if (!this.options.aggregatePipeline) return [];
+        return await Promise.resolve(this.options.aggregatePipeline(options));
+    }
+    
+    protected async getFindAllPipeline(options?: Record<string, any>): Promise<any[]> {
+        if (this.options.findAllPipeline) {
+            return await Promise.resolve(this.options.findAllPipeline(options));
+        }
+        return this.aggregatePipeline(options);
+    }
+    
+    protected async getFindByIdPipeline(options?: Record<string, any>): Promise<any[]> {
+        if (this.options.findByIdPipeline) {
+            return await Promise.resolve(this.options.findByIdPipeline(options));
+        }
+        return this.aggregatePipeline(options);
     }
 
-    async findAll(params: QueryParams) {
+    async findAll(params: QueryParams, options?: Record<string, any>) {
         const collection = await this.collection()
-        const query: any = buildMongoQuery(params)
-        const skip = (params.page - 1) * params.limit
+        let query
+        
+        if (this.options.generateQuery) {
+            query = await this.options.generateQuery(await buildMongoQuery(params, options), options)
+        } else {
+            query = await buildMongoQuery(params, options)
+        }
 
+        const skip = (params.page - 1) * params.limit
+        const customPipeline = await this.getFindAllPipeline(options);
+        
         const pipeline = [
             { $match: query },
-            ...this.getAggregatePipeline(),
+            ...customPipeline,
             {
-                $sort: {
-                    [params.fieldSort || 'createdAt']: params.order === 'asc' ? 1 : -1
-                }
+                $sort: buildMongoSort(params)
             },
             { $skip: skip },
             { $limit: params.limit }
@@ -59,13 +75,32 @@ export class BaseService<T extends BaseModel, U extends BaseInput> {
 
     async findById(id: string) {
         const collection = await this.collection()
+        const pipeline = await this.getFindByIdPipeline()
         const items = await collection.aggregate([
             { $match: { _id: new ObjectId(id) } },
-            ...this.getAggregatePipeline()
+            ...pipeline
         ]).toArray()
 
         if (!items.length) throw new Error(\`Item not found in \${this.collectionName}\`)
         return items[0] as T
+    }
+
+    async find(options: Record<string, any>) {
+        const collection = await this.collection()
+        const items = await collection.find(options).toArray()
+        return items
+    }
+
+    async findOne(options: Record<string, any>) {
+        const collection = await this.collection()
+        const item = await collection.findOne(options)
+        return item
+    }
+
+    async findWithPipeline(pipeline: any[]) {
+        const collection = await this.collection()
+        const items = await collection.aggregate(pipeline).toArray()
+        return items
     }
 
     async create(data: U): Promise<T> {
@@ -117,7 +152,7 @@ export class BaseService<T extends BaseModel, U extends BaseInput> {
         if (items.length === 0) return 0
 
         const result = await collection.insertMany(items)
-        return result.insertedCount
+        return result.insertedIds
     }
 
     async update(id: string, data: Partial<T>): Promise<T> {
